@@ -102,7 +102,8 @@ func (t *Tap) StartInterface() {
 	ttf.Init()
 	win,rend := sdl.CreateWindowAndRenderer(300, 60, sdl.WINDOW_BORDERLESS | sdl.WINDOW_OPENGL)
 	win.SetTitle("Tap")
-	f,err := ttf.OpenFont("audiowide.ttf",22)
+	gopath := os.Getenv("GOPATH")
+	f,err := ttf.OpenFont(gopath + "/src/github.com/whyrusleeping/tap/audiowide.ttf",22)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -144,13 +145,17 @@ func (t *Tap) StartInterface() {
 						txt = ""
 					} else if ev.Keysym.Sym <= 'z' && ev.Keysym.Sym >= 'a' {
 						txt += string(ev.Keysym.Sym)
+					} else if ev.Keysym.Sym == 8 {
+						if len(txt) > 0 {
+							txt = txt[:len(txt)-1]
+						}
 					}
+					l.SetText(txt)
 				default:
 					//fmt.Println(reflect.TypeOf(ev))
 				}
 			}
 
-			l.SetText(txt)
 			rend.Clear()
 			l.Draw()
 			rend.Present()
