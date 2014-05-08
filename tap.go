@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/jackyb/go-sdl2/sdl"
-	"github.com/jackyb/go-sdl2/sdl_ttf"
+	"github.com/veandco/go-sdl2/sdl"
+	"github.com/veandco/go-sdl2/sdl_ttf"
 	"net"
 	"strings"
 	"os"

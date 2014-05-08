@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/jackyb/go-sdl2/sdl"
-	ttf "github.com/jackyb/go-sdl2/sdl_ttf"
+	"github.com/veandco/go-sdl2/sdl"
+	ttf "github.com/veandco/go-sdl2/sdl_ttf"
 )
 
 type Label struct {
