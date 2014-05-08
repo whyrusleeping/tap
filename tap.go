@@ -97,9 +97,9 @@ func (t *Tap) Exec(e string) {
 }
 
 func (t *Tap) StartInterface() {
+	runtime.LockOSThread()
 	sdl.Init(sdl.INIT_EVERYTHING)
 	ttf.Init()
-	runtime.LockOSThread()
 	win,rend := sdl.CreateWindowAndRenderer(300, 60, sdl.WINDOW_BORDERLESS | sdl.WINDOW_OPENGL)
 	win.SetTitle("Tap")
 	f,err := ttf.OpenFont("audiowide.ttf",22)
@@ -174,7 +174,6 @@ func main() {
 
 	t := NewTap()
 	t.BuildProgramCache()
-	fmt.Println(t.programs)
 	go t.StartSocket()
 	t.StartInterface()
 }
