@@ -14,8 +14,21 @@ import (
 	"fmt"
 	"time"
 	"runtime"
+	"sort"
 )
 
+type ProgList []Prog
+func (p ProgList) Swap(i, j int) {
+	p[i],p[j] = p[j],p[i]
+}
+
+func (p ProgList) Less(i,j int) bool {
+	return p[i].Name < p[j].Name
+}
+
+func (p ProgList) Len() int {
+	return len(p)
+}
 
 type Message struct {
 	Command string
@@ -29,7 +42,7 @@ type Prog struct {
 type Tap struct {
 	Incoming chan *Message
 	active bool
-	programs []Prog
+	programs ProgList
 }
 
 func NewTap() *Tap {
@@ -49,6 +62,17 @@ func (t *Tap) handleConnection(r io.ReadCloser) {
 
 	t.Incoming <- m
 	r.Close()
+}
+
+func (t *Tap) FindLikely(s string) string {
+	for _,p := range t.programs {
+		if len(s) <= len(p.Name) {
+			if p.Name[:len(s)] == s {
+				return p.Name
+			}
+		}
+	}
+	return ""
 }
 
 func (t *Tap) StartSocket() {
@@ -84,6 +108,8 @@ func (t *Tap) BuildProgramCache() {
 			return nil
 		})
 	}
+	sort.Sort(t.programs)
+	fmt.Println(t.programs)
 }
 
 func (t *Tap) Exec(e string) {
@@ -107,10 +133,12 @@ func (t *Tap) StartInterface() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	l := NewLabel("Hello", sdl.Color{255,255,255,255}, f, sdl.Rect{0,0,100,30}, rend)
+	l := NewLabel("", sdl.Color{255,255,255,255}, f, sdl.Rect{0,0,100,30}, rend)
+	ghost := NewLabel("", sdl.Color{128,128,128,255}, f, sdl.Rect{0,0,100,30}, rend)
 	tick := time.NewTicker(time.Millisecond * 50)
 	t.active = true
 	txt := ""
+	sel := ""
 	for {
 		select {
 		case m := <-t.Incoming:
@@ -119,6 +147,8 @@ func (t *Tap) StartInterface() {
 				tick.Stop()
 				t.active = false
 				win.Hide()
+			case "kill":
+				return
 			case "show":
 				tick = time.NewTicker(time.Millisecond * 50)
 				t.active = true
@@ -137,15 +167,24 @@ func (t *Tap) StartInterface() {
 				case *sdl.QuitEvent:
 					return
 				case *sdl.KeyDownEvent:
-					//fmt.Println("key event.")
-					fmt.Printf("[%[1]d]\n", ev.Keysym.Sym)
-					if ev.Keysym.Sym == 13 || ev.Keysym.Sym == 27 {
+					if ev.Keysym.Sym == 13 {
+						//On enter key, execute
 						go t.SendMessage("hide")
-						t.Exec(txt)
+						t.Exec(sel)
+						sel = ""
+						txt = ""
+					} else if ev.Keysym.Sym == 27 {
+						//escape key, just hide
+						go t.SendMessage("hide")
+						sel = ""
 						txt = ""
 					} else if ev.Keysym.Sym <= 'z' && ev.Keysym.Sym >= 'a' {
+						//Letters...
 						txt += string(ev.Keysym.Sym)
+						sel = t.FindLikely(txt)
+						ghost.SetText(sel)
 					} else if ev.Keysym.Sym == 8 {
+						//Backspace
 						if len(txt) > 0 {
 							txt = txt[:len(txt)-1]
 						}
@@ -157,6 +196,7 @@ func (t *Tap) StartInterface() {
 			}
 
 			rend.Clear()
+			ghost.Draw()
 			l.Draw()
 			rend.Present()
 		}
